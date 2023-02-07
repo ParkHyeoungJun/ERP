@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.erp.mapper.ScheduleMapper">
+   <insert id="add">
+      insert into tbl_schedule (num, title, content, ip, startday, endday,
+      writer, day, personal, updatedate)
+      Values(schedule_seq.nextval, #{title}, #{content, jdbcType=VARCHAR}, #{ip}, #{startday},
+      #{endday},
+      #{writer}, sysdate, #{personal}, sysdate)
+   </insert>
+
+   <select id="select" resultMap="scheduleMap">
+      select rn, num, title, content, ip, startday, endday, writer, day, personal,
+      updatedate, cnt from (select /*+INDEX_DESC(tbl_schedule
+      pk_schedule) */ rownum rn, num, title, content, ip, startday, endday, writer, day,
+      personal,
+      updatedate, (Select count(1) from (select num, writer, DECODE(personal, '0', '개인', '1', '부서', '2', '직책', '') as personal, title from tbl_schedule where writer=#{writer, jdbcType=VARCHAR})
+      Where writer=#{writer, jdbcType=VARCHAR} and <include refid="criteria" />) as
+      cnt
+      from (select rownum rn, num, title, content, ip, startday, endday, writer,
+      day, DECODE(personal, '0', '개인',
+      '1', '부서', '2', '직책', '') as personal,
+      updatedate, (Select count(1) from (select num, writer, DECODE(personal, '0', '개인', '1', '부서', '2', '직책', '') as personal, title from tbl_schedule where writer=#{writer, jdbcType=VARCHAR} )
+      Where writer=#{writer, jdbcType=VARCHAR} and <include refid="criteria" />) as
+      cnt from tbl_schedule where writer=#{writer, jdbcType=VARCHAR}) Where <![CDATA[rownum <= #{pageNum} * #{amount} and]]> <include refid="criteria" /> ) 
+      where rn > (#{pageNum}-1) * #{amount} and <include refid="criteria" /> and writer=#{writer, jdbcType=VARCHAR}
+      order by startday,
+      endday, num asc
+   </select>
+
+   <resultMap type="kr.erp.vo.ScheduleVO" id="scheduleMap">
+      <result property="num" column="num" />
+      <result property="personal" column="personal" />
+      <result property="startday" column="startday" />
+      <result property="endday" column="endday" />
+      <result property="title" column="title" />
+      <result property="content" column="content" />
+      <result property="writer" column="writer" />
+      <result property="day" column="day" />
+      <result property="updatedate" column="updatedate" />
+      <result property="ip" column="ip" />
+      <result property="cnt" column="cnt" />
+   </resultMap>
+
+   <sql id="criteria">
+      <trim prefix="(" suffix=")" prefixOverrides="OR">
+         <foreach item="type" collection="typeArr">
+            <trim prefix="OR">
+               <choose>
+                  <when test="type=='T'.toString()">
+                     num like '%'||#{keyword}||'%'
+                  </when>
+                  <when test="type=='C'.toString()">
+                     personal like '%'||#{keyword}||'%'
+                  </when>
+                  <when test="type=='W'.toString()">
+                     title like '%'||#{keyword}||'%'
+                  </when>
+               </choose>
+            </trim>
+         </foreach>
+      </trim>
+   </sql>
+
+   <select id="get" resultType="kr.erp.vo.ScheduleVO">
+      select num, title, content, ip, startday, endday,
+      writer, day, DECODE(personal,
+      '0', '개인', '1', '부서', '2', '직책', '') as personal, updatedate from
+      tbl_schedule where num=#{num}
+   </select>
+
+   <delete id="delete">
+      delete tbl_schedule Where num = #{num}
+   </delete>
+
+   <update id="update">
+      update tbl_schedule set title=#{title}, content=#{content,
+      jdbcType=VARCHAR}, ip=#{ip}, startday=#{startday},
+      endday=#{endday}, writer=#{writer}, personal=#{personal}, updatedate=sysdate where
+      num=#{num}
+   </update>
+
+   <select id="calendar" resultType="kr.erp.vo.ScheduleVO">
+      select * from tbl_schedule
+   </select>
+
+</mapper>

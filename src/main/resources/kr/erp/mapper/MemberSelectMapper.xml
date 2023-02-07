@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.erp.mapper.MemberSelectMapper">
+	<resultMap type="kr.erp.vo.MemberSelectVO" id="MemberSelectMap">
+		<result property="userid" column="userid" />
+		<result property="username" column="username" />
+		<result property="num" column="num" />
+	</resultMap>
+	
+	<insert id="add">
+		insert into tbl_memberSelect (idx,num,userid,username) Values(memberselect_seq.nextval,#{num},#{userid},#{username})
+	</insert>
+	<delete id="delete">
+		delete tbl_memberSelect Where idx=#{idx}
+	</delete>
+	<select id="select" resultMap="MemberSelectMap">
+		Select * from tbl_memberSelect Where num=#{num}
+	</select>
+	<select id="get" resultMap="MemberSelectMap">
+		Select * from tbl_memberSelect Where idx=#{idx}
+	</select>
+	<update id="update">
+		update tbl_memberSelect set
+		num=#{num},
+		userid = #{userid},
+		username = #{username}
+		Where idx = #{idx}
+	</update>
+	
+	<delete id="deleteAll">
+		delete from tbl_memberSelect where num=#{num}
+	</delete>
+	
+	<select id="read" resultMap="MemberSelectMap">
+		Select * from tbl_memberSelect Where userid=#{userid} and num = #{num}
+	</select>
+</mapper>

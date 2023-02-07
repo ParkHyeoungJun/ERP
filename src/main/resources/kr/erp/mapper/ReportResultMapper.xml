@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.erp.mapper.ReportResultMapper">
+	<resultMap type="kr.erp.vo.ReportResultVO"
+		id="reportresultMap">
+		<id property="idx" column="idx" />
+		<result property="num" column="num" />
+		<result property="dept" column="dept" />
+		<result property="filename" column="filename" />
+		<result property="uuid" column="uuid" />
+		<result property="writer" column="writer" />
+		<result property="day" column="day" />
+
+		<result property="ip" column="ip" />
+		<result property="cnt" column="cnt" />
+	</resultMap>
+
+	<insert id="add">
+		<selectKey keyProperty="idx" order="BEFORE"
+			resultType="long">
+			SELECT
+			ReportResult_seq.nextval FROM DUAL
+		</selectKey>
+		insert into tbl_ReportResult
+		(
+		idx,
+		num,
+		filename,
+		dept ,
+		job,
+		uuid,
+		writer,
+		day,
+		ip
+		)
+		Values
+		(
+		#{idx},
+		#{num},
+		#{filename},
+		#{dept},
+		#{job},
+		#{uuid},
+		#{writer},
+		sysdate,
+		#{ip}
+		)
+	</insert>
+
+
+	<delete id="delete">
+		delete tbl_ReportResult Where idx = #{idx}
+	</delete>
+
+
+
+	<select id="get" resultMap="reportresultMap">
+		SELECT *
+		FROM
+		tbl_ReportResult Where num=#{num} AND writer = #{writer}
+	</select>
+</mapper>
+  

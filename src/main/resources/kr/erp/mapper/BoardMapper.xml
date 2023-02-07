@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.erp.mapper.BoardMapper">
+   <resultMap type="kr.erp.vo.BoardVO" id="BoardMap">
+      <id property="num" column="num" />
+      <result property="parentnum" column="parentnum" />
+      <result property="depth" column="depth" />
+      <result property="title" column="title" />
+      <result property="content" column="content" jdbcType="CLOB" />
+      <result property="writer" column="writer" />
+      <result property="register" column="register" />
+      <result property="updatedate" column="updatedate" />
+      <result property="ip" column="ip" />
+      <result property="cnt" column="cnt" />
+      <result property="numkey" column="num" />
+   </resultMap>
+   <sql id="criteria">
+      <trim prefix="(" suffix=")AND" prefixOverrides="OR">
+         <foreach item="type" collection="typeArr">
+            <trim prefix="OR">
+               <choose>
+                  <when test="type=='T'.toString()">
+                     title like '%'||#{keyword}||'%'
+                  </when>
+                  <when test="type=='C'.toString()">
+                     content like '%'||#{keyword}||'%'
+                  </when>
+                  <when test="type=='W'.toString()">
+                     writer like '%'||#{keyword}||'%'
+                  </when>
+               </choose>
+            </trim>
+         </foreach>
+      </trim>
+   </sql>
+   <select id="select" resultMap="BoardMap">
+      Select * from (
+      WITH tab AS (
+      SELECT
+      NUM,CODE,TITLE,CONTENT,WRITER,TO_CHAR(DAY, 'YYYY-MM-DD') AS
+      daytostring,UPDATER,UPDATEDATE,IP,NOTICE,PARENTNUM,DEPTH,replycnt
+      ,(Select
+      count(1) from tbl_board Where code= #{code} and notice=0 ) as
+      cnt
+      FROM
+      tbl_board Where code= #{code} and tbl_board.notice=1
+      UNION ALL
+      SELECT
+      NUM,CODE,TITLE,CONTENT,WRITER,TO_CHAR(DAY, 'YYYY-MM-DD') AS
+      daytostring,UPDATER,UPDATEDATE,IP,NOTICE,PARENTNUM,DEPTH,replycnt
+      ,(Select
+      count(1) from tbl_board Where
+      <include refid="criteria" />
+      code= #{code} and notice=0 ) as cnt
+      FROM
+      tbl_board Where
+      <include refid="criteria" />
+      <![CDATA[
+       code= #{code} and tbl_board.notice=0
+      ]]>
+
+      )
+      Select
+      /*+INDEX_DESC(tbl_board pk_board) */
+      ROWNUM
+      rn,NUM,CODE,TITLE,CONTENT,WRITER,DAYTOSTRING,UPDATER,UPDATEDATE,IP,NOTICE,PARENTNUM,DEPTH,CNT,replycnt
+      from tab
+      <![CDATA[
+      Where rownum <= #{pageNum} * #{amount}
+      ]]>
+      START WITH depth=0
+      CONNECT BY PRIOR num = parentnum
+      ORDER SIBLINGS BY
+      notice DESC , num desc
+      )
+      <![CDATA[
+      where rn >(#{pageNum}-1) * #{amount}
+      ]]>
+   </select>
+
+   <select id="get" resultType="kr.erp.vo.BoardVO">
+      select*from tbl_board where
+      num=#{num}
+   </select>
+
+
+
+   <delete id="delete">
+      DELETE FROM tbl_board
+      WHERE num IN (
+      SELECT num
+      FROM
+      (
+      SELECT num, parentnum
+      FROM tbl_board
+      START WITH num = #{num}
+      CONNECT BY parentnum = PRIOR num
+      )
+      )
+   </delete>
+
+   <insert id="add">
+      <selectKey keyProperty="num" order="BEFORE"
+         resultType="long">
+         SELECT
+         Board_seq.NEXTVAL FROM DUAL
+      </selectKey>
+
+      insert into tbl_board
+      (
+      num,
+      code ,
+      parentnum,
+      depth,
+      title,
+      content,
+      ip,
+      day,
+      writer,
+      notice
+      )
+      Values
+      (
+      ${num},
+      #{code},
+      #{parentnum},
+      #{depth},
+      #{title} ,
+      #{content,jdbcType=LONGVARBINARY} ,
+      #{ip} ,
+      sysdate,
+      #{writer},
+      #{notice}
+      )
+   </insert>
+   <insert id="insertSelectKey">
+      <selectKey keyProperty="num" order="BEFORE"
+         resultType="long">
+         SELECT
+         Board_seq.NEXTVAL FROM DUAL
+      </selectKey>
+      insert into tbl_board
+      (
+      num,
+      code ,
+      parentnum,
+      depth,
+      title,
+      content,
+      ip,
+      day,
+      writer,
+      notice
+      )
+      Values
+      (
+      #{num},
+      #{code},
+      #{parentnum},
+      #{depth},
+      #{title}
+      ,
+      #{content,jdbcType=LONGVARBINARY} ,
+      #{ip} ,
+      sysdate,
+      #{writer},
+      #{notice}
+      )
+   </insert>
+   <update id="update">
+      update tbl_board set
+      title=#{title} ,
+      content=#{content,jdbcType=LONGVARBINARY},
+      ip=#{ip} ,
+      notice =#{notice},
+      UPDATER = #{updater},
+      UPDATEDATE = sysdate
+      Where num = #{num}
+   </update>
+
+   <sql id="mycriteria">
+      <trim prefix="(" suffix=")" prefixOverrides="OR">
+         <foreach item="type" collection="typeArr">
+            <trim prefix="OR">
+               <choose>
+                  <when test="type=='T'.toString()">
+                     a.title like '%'||#{keyword}||'%'
+                  </when>
+                  <when test="type=='C'.toString()">
+                     b.title like '%'||#{keyword}||'%'
+                  </when>
+                  <when test="type=='W'.toString()">
+                     b.content like '%'||#{keyword}||'%'
+                  </when>
+               </choose>
+            </trim>
+         </foreach>
+      </trim>
+   </sql>
+   <select id="myselect" resultMap="BoardMap">
+      Select * from ( WITH tab AS
+      (SELECT b.NUM,b.CODE,b.TITLE,b.CONTENT,b.WRITER,TO_CHAR(b.DAY,
+      'YYYY-MM-DD') AS
+      daytostring,b.UPDATER,b.UPDATEDATE,b.IP,NOTICE,PARENTNUM,DEPTH,
+      (Select count(1) from tbl_board b left outer join tbl_boardadmin a on
+      b.code=a.code Where b.writer=#{writer, jdbcType=VARCHAR} and <include refid="mycriteria" />) as cnt FROM tbl_board b left outer join tbl_boardadmin a on
+      b.code=a.code Where b.writer=#{writer, jdbcType=VARCHAR} and <include refid="mycriteria" /> and
+      b.notice=1
+      UNION ALL SELECT b.NUM,b.CODE,b.TITLE,b.CONTENT,b.WRITER,TO_CHAR(b.DAY,
+      'YYYY-MM-DD') AS
+      daytostring,b.UPDATER,b.UPDATEDATE,b.IP,NOTICE,PARENTNUM,DEPTH,
+      (Select count(1) from tbl_board b left outer join tbl_boardadmin a on
+      b.code=a.code Where b.writer=#{writer, jdbcType=VARCHAR} and <include refid="mycriteria" />) as cnt FROM tbl_board b left outer join tbl_boardadmin a on
+      b.code=a.code Where b.writer=#{writer, jdbcType=VARCHAR} and <include refid="mycriteria" /> and
+      b.notice=0)
+      Select /*+INDEX_DESC(tbl_board pk_board) */ ROWNUM rn,b.NUM as num,b.CODE as
+      code,b.TITLE as title,b.CONTENT as content,b.WRITER as
+      writer,DAYTOSTRING,b.UPDATER as upadter,b.UPDATEDATE as
+      updatedate,b.IP as ip,NOTICE,PARENTNUM,DEPTH,CNT
+      from tab b left outer join tbl_boardadmin a on b.code=a.code <![CDATA[Where rownum
+      <= #{pageNum} * #{amount} ]]> and <include refid="mycriteria" />) b left outer join tbl_boardadmin a on
+      b.code=a.code
+      <![CDATA[where rn >(#{pageNum}-1) * #{amount} and b.writer=#{writer, jdbcType=VARCHAR}]]> and <include refid="mycriteria" />
+   </select>
+
+
+   <update id="updateReplyCnt">
+      update tbl_board set replycnt=replycnt+#{amount}
+      where num=#{num}
+   </update>
+
+</mapper>

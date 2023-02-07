@@ -1,0 +1,362 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.erp.mapper.ProjectAdminMapper">
+   <resultMap type="kr.erp.vo.ProjectAdminVO"
+      id="ProjectAdminMap">
+      <id property="num" column="num" />
+      <result property="title" column="title" />
+      <result property="content" column="content" jdbcType="CLOB" />
+      <result property="writer" column="writer" />
+      <result property="updater" column="updater" />
+      <result property="updatedate" column="updatedate" />
+      <result property="ip" column="ip" />
+      <result property="member" column="member" />
+      <result property="startday" column="startday" />
+      <result property="endday" column="endday" />
+      <result property="day" column="day" />
+      <result property="filename" column="filename" />
+      <result property="projectday" column="projectday" />
+   </resultMap>
+   <resultMap type="kr.erp.vo.MemberVO" id="memberMap">
+      <result property="username" column="username" />
+      <result property="dept" column="dept" />
+      <result property="job" column="job" />
+   </resultMap>
+   <sql id="criteria">
+      <trim prefix="(" suffix=")" prefixOverrides="OR">
+         <foreach item="type" collection="typeArr">
+            <trim prefix="OR">
+               <choose>
+                  <when test="type=='T'.toString()">
+                     title like '%'||#{keyword}||'%'
+                  </when>
+                  <when test="type=='C'.toString()">
+                     content like '%'||#{keyword}||'%'
+                  </when>
+               </choose>
+            </trim>
+         </foreach>
+      </trim>
+   </sql>
+   <select id="select" resultMap="ProjectAdminMap">
+      Select * from (
+      WITH tab AS (
+      SELECT
+      num,title,writer,TO_CHAR(DAY,'YYYY-MM-DD') AS
+      daytostring,progress,startday,endday
+      ,(Select count(1) from
+      tbl_projectadmin Where
+      <include refid="criteria" />
+      <if test="btnDaySearch1 != ''">
+         and(<![CDATA[startday>=]]>TO_DATE(#{btnDaySearch1}))
+      </if>
+      <if test="btnDaySearch2 != ''">
+         and(<![CDATA[endday<=]]>TO_DATE(#{btnDaySearch2})+1)
+      </if>
+      <if test="btnDaySearch1 != '' and btnDaySearch2 != ''">
+         and(<![CDATA[startday>=]]>TO_DATE(#{btnDaySearch1})
+         and <![CDATA[endday<=]]>TO_DATE(#{btnDaySearch2})+1)
+      </if>
+      ) as cnt
+      FROM tbl_projectadmin Where
+      <include refid="criteria" />
+      <if test="btnDaySearch1 != ''">
+         and(<![CDATA[startday>=]]>TO_DATE(#{btnDaySearch1}))
+      </if>
+      <if test="btnDaySearch2 != ''">
+         and(<![CDATA[endday<=]]>TO_DATE(#{btnDaySearch2})+1)
+      </if>
+      <if test="btnDaySearch1 != '' and btnDaySearch2 != ''">
+         and(<![CDATA[startday>=]]>TO_DATE(#{btnDaySearch1})
+         and <![CDATA[endday<=]]>TO_DATE(#{btnDaySearch2})+1)
+      </if>
+      )
+      Select
+      /*+INDEX_DESC(tbl_projectadmin pk_projectadmin) */
+      ROWNUM
+      rn,num,title,writer,daytostring,progress,startday,endday,CNT
+      from
+      (select * from tab order by progress asc,num desc)
+      <![CDATA[
+      Where rownum <= #{pageNum} * #{amount}
+      ]]>
+      order by progress asc,num desc
+      )
+      <![CDATA[
+      where rn >(#{pageNum}-1) * #{amount}
+      ]]>
+   </select>
+
+   <select id="get" resultMap="ProjectAdminMap">
+      select * from tbl_projectadmin Where
+      num = #{num}
+   </select>
+
+   <insert id="add">
+      <selectKey keyProperty="num" order="BEFORE"
+         resultType="long">
+         select projectadmin_seq.nextval from dual
+      </selectKey>
+      insert into tbl_projectadmin
+      (
+      num ,
+      title ,
+      content ,
+      ip
+      ,
+      startday ,
+      endday
+      ,
+      writer ,
+      day ,
+      member,
+      progress,
+      useridsp
+      )
+      Values
+      (
+      #{num},
+      #{title} ,
+      #{content} ,
+      #{ip} ,
+      #{startday} ,
+      #{endday} ,
+      #{writer} ,
+      sysdate ,
+      #{member},
+      #{progress},
+      #{useridsp}
+      )
+   </insert>
+
+
+   <update id="update">
+      update tbl_projectadmin set
+      num=#{num} ,
+      title=#{title} ,
+      content=#{content} ,
+      ip=#{ip} ,
+      startday=#{startday} ,
+      endday=#{endday} ,
+      updater=#{updater} ,
+      progress=#{progress},
+      UPDATEDATE
+      = sysdate,
+      member=#{member},
+      useridsp=#{useridsp}
+      Where num = #{num}
+   </update>
+
+   <delete id="delete">
+      delete tbl_projectadmin Where num = #{num}
+   </delete>
+
+
+   <select id="pselect" resultMap="ProjectAdminMap">
+      Select * from (
+      WITH tab AS (
+      SELECT
+      p.num, title, content, userid,
+      username, TO_CHAR(DAY,'YYYY-MM-DD') AS
+      daytostring, startday, endday,
+      progress
+      ,(Select count(1) from tbl_projectadmin p left outer join
+      tbl_memberselect m on p.num=m.num
+      Where
+      <include refid="pcriteria" />
+      and userid=#{userid, jdbcType=VARCHAR} and progress=0) as cnt
+      FROM
+      tbl_projectadmin p
+      left outer join tbl_memberselect m on p.num=m.num
+      Where
+      <include refid="pcriteria" />
+      )
+      Select
+      /*+INDEX_DESC(tbl_projectadmin p left outer join
+      tbl_memberselect m on p.num=m.num) */
+      ROWNUM
+      rn, num, title, content,
+      userid, username, daytostring, startday, endday, progress, cnt
+      from tab
+      <![CDATA[
+      Where rownum <= #{pageNum} * #{amount}
+      ]]>
+      and userid=#{userid, jdbcType=VARCHAR} and progress=0
+      )
+      <![CDATA[
+      where rn >(#{pageNum}-1) * #{amount}
+      ]]>
+      order by
+      startday, endday, num
+      asc
+   </select>
+
+   <sql id="pcriteria">
+      <trim prefix="(" suffix=")" prefixOverrides="OR">
+         <foreach item="type" collection="typeArr">
+            <trim prefix="OR">
+               <choose>
+                  <when test="type=='T'.toString()">
+                     p.num like '%'||#{keyword}||'%'
+                  </when>
+                  <when test="type=='C'.toString()">
+                     title like '%'||#{keyword}||'%'
+                  </when>
+               </choose>
+            </trim>
+         </foreach>
+      </trim>
+   </sql>
+
+   <select id="projectget" resultMap="ProjectAdminMap">
+      select num, title, content,
+      startday, endday
+      from tbl_projectadmin Where num = #{num}
+   </select>
+
+
+   <select id="myreport" resultMap="ProjectAdminMap">
+      Select * from (
+      WITH tab AS (
+      SELECT
+      a.*
+      ,(Select filename from
+      TBL_REPORT
+      Where num=a.num and WRITER=b.userid) as
+      filename
+      ,(Select
+      count(1) from
+      tbl_projectadmin a, TBL_MEMBERSELECT b Where a.num=b.num and
+      userid=#{userid}
+      <if test="type=='T'.toString()">
+         and(title like '%'||#{keyword}||'%')
+      </if>
+
+      <if test="btnDaySearch1 != ''">
+         and(<![CDATA[a.startday>=]]>TO_DATE(#{btnDaySearch1}))
+      </if>
+      <if test="btnDaySearch2 != ''">
+         and(<![CDATA[a.endday<=]]>TO_DATE(#{btnDaySearch2})+1)
+      </if>
+      <if test="btnDaySearch1 != '' and btnDaySearch2 != ''">
+         and(<![CDATA[a.startday>=]]>TO_DATE(#{btnDaySearch1})
+         and <![CDATA[a.endday<=]]>TO_DATE(#{btnDaySearch2})+1)
+      </if>
+      )
+      as cnt
+      ,b.userid as userid
+      ,to_char(a.day,'yyyy-mm-dd') as projectday
+      FROM
+      tbl_projectadmin a
+      join TBL_MEMBERSELECT b
+      on a.num=b.num
+      Where
+      b.userid= #{userid}
+
+      <if test="type=='T'.toString()">
+         and(title like '%'||#{keyword}||'%')
+      </if>
+
+      <if test="btnDaySearch1 != ''">
+         and(<![CDATA[a.startday>=]]>TO_DATE(#{btnDaySearch1}))
+      </if>
+      <if test="btnDaySearch2 != ''">
+         and(<![CDATA[a.endday<=]]>TO_DATE(#{btnDaySearch2})+1)
+      </if>
+      <if test="btnDaySearch1 != '' and btnDaySearch2 != ''">
+         and(<![CDATA[a.startday>=]]>TO_DATE(#{btnDaySearch1})
+         and <![CDATA[a.endday<=]]>TO_DATE(#{btnDaySearch2})+1)
+      </if>
+      order by filename desc, a.num desc
+      )
+      Select
+      /*+INDEX_DESC(tbl_projectadmin pk_projectadmin) */
+      ROWNUM
+      rn,num,title,filename,writer,progress,projectday,startday,endday,userid,CNT
+      from tab
+
+      Where <![CDATA[rownum <= #{pageNum} * #{amount}]]>
+      order by filename desc, num desc
+      )
+
+      where <![CDATA[rn > (#{pageNum}-1) * #{amount}]]>
+   </select>
+
+   <!-- 모든 프로젝트 -->
+   <select id="allproject" resultMap="ProjectAdminMap">
+      Select * from (
+      WITH tab AS (
+      SELECT
+      a.num,a.title,c.userid,c.username,TO_CHAR(a.DAY,'YYYY-MM-DD') AS
+      projectday,a.progress,a.startday,a.endday,
+      (Select filename from
+      TBL_REPORT Where num=a.num and WRITER=b.userid)
+      as filename
+      ,(Select 
+       count(1) from tbl_projectadmin a, TBL_MEMBERSELECT b, tbl_member c
+      where a.num=b.num and b.userid= c.userid and a.progress <![CDATA[<>]]>'1'
+      <if test="type=='T'.toString()">
+         and(title like '%'||#{keyword}||'%')
+      </if>
+      <if test="type=='MI'.toString()">
+         and(c.userid like '%'||#{keyword}||'%')
+      </if>
+      <if test="type=='MN'.toString()">
+         and(c.username like '%'||#{keyword}||'%')
+      </if>
+
+      <if test="btnDaySearch1 != ''">
+         and(<![CDATA[a.startday>=]]>TO_DATE(#{btnDaySearch1}))
+      </if>
+      <if test="btnDaySearch2 != ''">
+         and(<![CDATA[a.endday<=]]>TO_DATE(#{btnDaySearch2})+1)
+      </if>
+      <if test="btnDaySearch1 != '' and btnDaySearch2 != ''">
+         and(<![CDATA[a.startday>=]]>TO_DATE(#{btnDaySearch1})
+         and <![CDATA[a.endday<=]]>TO_DATE(#{btnDaySearch2})+1)
+      </if>
+      ) as cnt
+      FROM tbl_projectadmin a,TBL_MEMBERSELECT b, tbl_member c Where
+      a.num=b.num and b.userid= c.userid and a.progress <![CDATA[<>]]>'1'
+      <if test="type=='T'.toString()">
+         and(title like '%'||#{keyword}||'%')
+      </if>
+      <if test="type=='MI'.toString()">
+         and(c.userid like '%'||#{keyword}||'%')
+      </if>
+      <if test="type=='MN'.toString()">
+         and(c.username like '%'||#{keyword}||'%')
+      </if>
+
+      <if test="btnDaySearch1 != ''">
+         and(<![CDATA[a.startday>=]]>TO_DATE(#{btnDaySearch1}))
+      </if>
+      <if test="btnDaySearch2 != ''">
+         and(<![CDATA[a.endday<=]]>TO_DATE(#{btnDaySearch2})+1)
+      </if>
+      <if test="btnDaySearch1 != '' and btnDaySearch2 != ''">
+         and(<![CDATA[a.startday>=]]>TO_DATE(#{btnDaySearch1})
+         and <![CDATA[a.endday<=]]>TO_DATE(#{btnDaySearch2})+1)
+      </if>
+
+      )
+      Select
+      /*+INDEX_DESC(tbl_projectadmin pk_projectadmin) */
+      ROWNUM
+      rn,num,title,userid,username,progress,projectday,startday,endday,filename,CNT
+      from tab
+  <![CDATA[
+      where rownum <= #{pageNum} * #{amount}
+      ]]>
+
+      )
+     
+       <![CDATA[
+      where rn >(#{pageNum}-1) * #{amount}
+      ]]>
+      order by num desc
+
+   </select>
+</mapper>

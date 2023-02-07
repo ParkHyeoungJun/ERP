@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.erp.mapper.ReplyMapper">
+	<resultMap type="kr.erp.vo.ReplyVO" id="replyMap">
+		<id property="idx" column="idx" />
+		<result property="num" column="num" />
+		<result property="content" column="content" />
+		<result property="writer" column="writer" />
+		<result property="day" column="day" />
+		<result property="updater" column="updater" />
+		<result property="updatedate" column="updatedate" />
+		<result property="ip" column="ip" />
+		<result property="cnt" column="cnt" />
+	</resultMap>
+
+	<insert id="add">
+		insert into tbl_reply
+		(
+		idx,
+		num,
+		content,
+		writer,
+		day,
+		ip
+		)
+		Values
+		(
+		reply_seq.nextval,
+		#{num},
+		#{content},
+		#{writer},
+		sysdate,
+		#{ip}
+		)
+	</insert>
+	<update id="modfiy">
+		update tbl_reply set
+		content =#{content} ,
+		updater =#{writer} ,
+		updatedate = sysdate
+		Where idx =
+		#{idx}
+	</update>
+
+	<delete id="delete">
+		delete tbl_reply Where idx = #{idx}
+	</delete>
+
+	<select id="select" resultMap="replyMap">
+		Select * from tbl_reply Where num = #{num}
+		order by idx desc
+	</select>
+	
+	
+	<select id='idx' resultMap='replyMap'>
+		select * from tbl_reply where idx=#{idx}
+	</select>
+	
+	
+	<delete id="deleteAll">
+		DELETE FROM tbl_reply
+		WHERE num IN (
+			SELECT num
+			FROM
+			(
+			SELECT r.num, b.parentnum
+			FROM tbl_reply r, tbl_board b
+			WHERE r.num = b.num
+			START WITH r.num = #{num}
+			CONNECT BY b.parentnum = PRIOR r.num
+			)
+		)
+	</delete>
+</mapper>
+  

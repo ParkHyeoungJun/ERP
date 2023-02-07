@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.erp.mapper.BonusMapper">
+<resultMap type="kr.erp.vo.BonusVO"
+		id="BonusMap">
+		<id property="idx" column="idx" />
+		<result property="num" column="num" />
+		<result property="userid" column="userid" />
+		<result property="bonus" column="bonus" />
+		<result property="con" column="con"/>
+		<result property="ip" column="ip" />
+		<result property="day" column="day" />
+		<result property="writer" column="writer" />
+		<result property="updater" column="updater" />
+		<result property="updatedate" column="updatedate" />
+	</resultMap>
+	<sql id="criteria">
+		<trim prefix="(" suffix=")" prefixOverrides="OR">
+			<foreach item="type" collection="typeArr">
+				<trim prefix="OR">
+					<choose>
+						<when test="type=='T'.toString()">
+							userid like '%'||#{keyword}||'%'
+						</when>
+						<when test="type=='C'.toString()">
+							num like '%'||#{keyword}||'%'
+						</when>
+					</choose>
+				</trim>
+			</foreach>
+		</trim>
+	</sql>
+	
+<insert id="add">
+      insert into tbl_bonus (idx,num,userid, bonus, con, ip, day,writer)
+      values (Bonus_seq.nextval,#{num,jdbcType=INTEGER},#{userid},#{bonus},#{con},#{ip},sysdate,#{writer})
+   </insert>
+   
+   <update id="update">
+		update tbl_bonus set
+		idx=#{idx},
+		bonus = #{bonus},
+		userid=#{userid},
+		con = #{con},
+		ip = #{ip},
+		num=#{num,jdbcType=INTEGER},
+		updater=#{updater},
+		updatedate=sysdate
+		Where idx = #{idx}
+	</update>
+	
+   <delete id="delete">
+      delete from tbl_bonus where idx=#{idx}
+   </delete>
+
+   <select id="select" resultMap="BonusMap">
+   Select * from (
+		WITH tab AS (
+		SELECT
+		idx,con,userid,bonus,num,TO_CHAR(DAY,'YYYY-MM-DD') AS daytostring,writer
+		,(Select count(1) from tbl_bonus Where
+		<include refid="criteria" />
+			<if test="contentselect == '1'.toString()">
+				and(con=1)
+			</if>
+			<if test="contentselect == '2'.toString()">
+				and(con=2)
+			</if>
+			<if test="contentselect == '3'.toString()">
+				and(con=3)
+			</if>) as cnt
+		FROM tbl_bonus Where
+		<include refid="criteria" />
+			<if test="contentselect == '1'.toString()">
+				and(con=1)
+			</if>
+			<if test="contentselect == '2'.toString()">
+				and(con=2)
+			</if>
+			<if test="contentselect == '3'.toString()">
+				and(con=3)
+			</if>
+		)
+		Select
+		/*+INDEX_DESC(tbl_bonus pk_bonus) */
+		ROWNUM
+		rn,idx,con,userid,bonus,num,daytostring,writer,CNT
+		from tab
+      <![CDATA[
+      Where rownum <= #{pageNum} * #{amount}
+      ]]>
+		order by idx desc
+		)
+      <![CDATA[
+      where rn >(#{pageNum}-1) * #{amount}
+      ]]>
+      
+   </select>
+   
+   <delete id="pjdelete">
+	      delete from tbl_bonus where num=#{num}
+	</delete>
+</mapper>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.erp.mapper.MemberAuthMapper">
+	<resultMap type="kr.erp.vo.AuthVO" id="authMap">
+		<result property="userid" column="userid" />
+		<result property="auth" column="auth" />
+	</resultMap>
+	<insert id="add">
+		insert into tbl_memberAuth (userid,auth) Values(#{userid},#{auth})
+	</insert>
+	<delete id="delete">
+		delete tbl_memberAuth Where userid=#{userid} and auth = #{auth}
+	</delete>
+	<select id="select" resultType="kr.erp.vo.AuthVO">
+		Select * from tbl_memberAuth Where userid=#{userid}
+	</select>
+	
+	<select id='authselect' resultType="kr.erp.vo.AuthVO">
+		select a.auth from tbl_member m, tbl_memberauth a
+		where (a.userid=m.userid) and (m.userid = #{userid})
+	</select>
+</mapper>
+  

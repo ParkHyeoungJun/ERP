@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.erp.mapper.MainBannerMapper">
+	<resultMap type="kr.erp.vo.MainBannerVO" id="MainBannerMap">
+		<id property="idx" column="idx" />
+		<result property="num" column="num" />
+		<result property="link" column="link" />
+		<result property="image" column="image" />
+		<result property="simg" column="simg" />
+		<result property="ip" column="ip" />
+		<result property="day" column="day" />
+		<result property="writer" column="writer" />
+
+	</resultMap>
+
+
+	<insert id="add">
+      insert into tbl_mainbanner (idx,num,link, image,simg, ip, day,writer)
+      values (MainBanner_seq.nextval,#{num,jdbcType=INTEGER},#{link,jdbcType=VARCHAR},#{image},#{simg},#{ip},sysdate,#{writer,jdbcType=VARCHAR})
+   </insert>
+
+	<delete id="delete">
+      delete from tbl_mainbanner where idx=#{idx}
+   </delete>
+
+	<select id="select" resultMap="MainBannerMap">
+		SELECT
+		idx,num,link,image,to_char(day, 'YYYY-MM-DD') AS daytostring,writer
+		FROM
+    	tbl_mainbanner
+		order by num asc
+	</select>
+
+</mapper>

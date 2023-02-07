@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans:beans
+	xmlns="http://www.springframework.org/schema/mvc"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:beans="http://www.springframework.org/schema/beans"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:websocket="http://www.springframework.org/schema/websocket"
+	xsi:schemaLocation="http://www.springframework.org/schema/websocket http://www.springframework.org/schema/websocket/spring-websocket-4.3.xsd
+		http://www.springframework.org/schema/mvc https://www.springframework.org/schema/mvc/spring-mvc.xsd
+		http://www.springframework.org/schema/beans https://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context.xsd">
+
+	<annotation-driven />
+
+	<resources mapping="/resources/**" location="/resources/" />
+
+	<!-- 상단에 xmlns:websocket="http://www.springframework.org/schema/websocket" 
+		속성도 추가 -->
+	<!-- 웹 소켓 핸들러 시작 -->
+	<websocket:handlers>
+		<websocket:mapping handler="chattingHandler"
+			path="/chatting" />
+		<websocket:sockjs></websocket:sockjs>
+	</websocket:handlers>
+	<beans:bean id="chattingHandler" class="kr.erp.socket.ChattingHandler"/>
+	<!-- 웹 소켓 핸들러 끝 -->
+
+
+	<beans:bean
+		class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<beans:property name="prefix" value="/WEB-INF/views/" />
+		<beans:property name="suffix" value=".jsp" />
+	</beans:bean>
+
+	<context:component-scan
+		base-package="kr.erp.controller" />
+
+
+	<beans:bean class="java.lang.String" id="uploadPath">
+		<beans:constructor-arg
+			value="C:\project\STS\.metadata\.plugins\org.eclipse.wst.server.core\tmp0\wtpwebapps\erp\resources"></beans:constructor-arg>
+	</beans:bean>
+
+	<beans:bean
+		class="org.springframework.web.multipart.support.StandardServletMultipartResolver"
+		id="multipartResolver">
+	</beans:bean>
+
+	<resources location="/resources/ckUpload/"
+		mapping="/ckUpload/**"></resources>
+	<!-- 배너 이미지 경로 -->
+	<resources mapping="/imgUpload/**"
+		location="/resources/imgUpload/" />
+
+	<resources mapping="/img/**" location="C:\upload" />
+
+</beans:beans>

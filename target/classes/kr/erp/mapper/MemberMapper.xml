@@ -1,0 +1,419 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.erp.mapper.MemberMapper">
+	<resultMap type="kr.erp.vo.MemberVO" id="memberMap">
+		<id property="userid" column="userid" />
+		<result property="userpw" column="userpw" />
+		<result property="username" column="username" />
+		<result property="sex" column="sex" />
+		<result property="birth" column="birth" />
+		<result property="email" column="email" />
+		<result property="zip" column="zip" />
+		<result property="addr1" column="addr1" />
+		<result property="addr2" column="addr2" />
+		<result property="phone" column="phone" />
+		<result property="hp" column="hp" />
+		<result property="job" column="job" />
+		<result property="dept" column="dept" />
+		<result property="bonus" column="bonus" />
+		<result property="cnt" column="cnt" />
+		<collection property="authList" resultMap="authMap"></collection>
+	</resultMap>
+	<resultMap type="kr.erp.vo.AuthVO" id="authMap">
+		<result property="userid" column="userid" />
+		<result property="auth" column="auth" />
+	</resultMap>
+
+
+	<insert id="membership">
+		insert into tbl_member
+		(
+		userid
+		,userpw
+		,username
+		,sex
+		,birth
+		,email
+		,zip
+		,addr1
+		,addr2
+		,phone
+		,hp
+		,dept
+		,job
+		,day
+		)
+		Values
+		(
+		#{userid}
+		,#{userpw}
+		,#{username}
+		,#{sex}
+		,#{birth}
+		,#{email}
+		,#{zip}
+		,#{addr1}
+		,#{addr2}
+		,#{phone}
+		,#{hp}
+		,#{dept}
+		,#{job}
+		,sysdate
+		)
+	</insert>
+	<update id="update">
+		update tbl_member set
+		userpw=#{userpw}
+		,username=#{username}
+		,sex =#{sex}
+		,birth =#{birth}
+		,email =#{email}
+		,zip =#{zip}
+		,addr1 =#{addr1}
+		,addr2 =#{addr2}
+		,phone =#{phone}
+		,hp =#{hp}
+		,dept
+		=#{dept}
+		,job=#{job}
+		Where userid= #{userid}
+	</update>
+
+	<delete id="delete">
+		Delete tbl_member Where userid= #{userid}
+	</delete>
+
+	<select id="existid" resultType="kr.erp.vo.MemberVO">
+		Select *
+		from tbl_member Where
+		userid= #{userid}
+	</select>
+
+	<!-- <select id="read" resultMap="memberMap">
+      <![CDATA[select mem.userid, userpw, username, sex,
+      birth, email, zip, addr1, addr2, phone, hp, dept, job, day, auth
+      from tbl_member mem left outer join
+      tbl_memberAuth auth on mem.userid=auth.userid
+      where mem.userid=#{userid}]]>
+      order by auth.auth desc
+   </select> -->
+   
+   <select id="read" resultMap="memberMap">
+      select mem.*, auth
+      from tbl_member mem left outer join
+      tbl_memberAuth auth on mem.userid=auth.userid
+      where mem.userid=#{userid}
+      order by auth.auth desc
+   </select>
+
+
+	<sql id="criteria">
+		<trim prefix="(" suffix=")" prefixOverrides="OR">
+			<foreach item="type" collection="typeArr">
+				<trim prefix="OR">
+					<choose>
+						<when test="type=='T'.toString()">
+							userid like '%'||#{keyword}||'%'
+						</when>
+						<when test="type=='C'.toString()">
+							username like '%'||#{keyword}||'%'
+						</when>
+						<when test="type=='W'.toString()">
+							email like '%'||#{keyword}||'%'
+						</when>
+					</choose>
+				</trim>
+			</foreach>
+		</trim>
+	</sql>
+	<select id="select" resultMap="memberMap">
+		select rn ,USERID, USERPW, USERNAME, SEX, BIRTH, EMAIL, ZIP, ADDR1,
+		ADDR2,birth
+		PHONE, HP, DEPT, JOB, DAY,CNT
+		from
+		(
+		select
+		/*+INDEX_DESC(tbl_member pk_member) */
+		rownum rn, USERID, USERPW,
+		USERNAME, SEX, BIRTH, EMAIL, ZIP, ADDR1, ADDR2,birth
+		PHONE, HP, DECODE(dept,
+		'10', '인사부', '20', '총무부', '30', '회계부','40', '기획부','50', '영업부', '') as
+		DEPT,
+		DECODE(JOB, '01', '사원', '02', '주임', '03', '전임','04', '선임','05',
+		'대리','06',
+		'과장','07', '차장','08',
+		'부장','09', '전무','10', '상무','11',
+		'전무','12', '부사장','13', '사장','14', '부회장','15',
+		'회장','') as JOB, DAY
+		,(Select count(1) from tbl_member Where 1=1 and
+		<include refid="criteria" />
+		) as cnt
+		from tbl_member
+		Where
+		<![CDATA[
+		rownum <= #{pageNum} * #{amount}
+		and
+		]]>
+		<include refid="criteria" />
+		)
+		where rn > (#{pageNum}-1) * #{amount}
+		and
+		<include refid="criteria" />
+	</select>
+
+	<select id="finduserid" resultMap="memberMap">
+		Select * from tbl_member
+		Where username=#{username} and email=#{email} and rownum=1
+	</select>
+
+	<select id="memberselect" resultMap="memberMap">
+		Select username,dept,job,userid
+		from tbl_member
+		<if test='dept != "" and job == ""'>
+			where dept=#{dept,jdbcType=VARCHAR}
+		</if>
+		<if test='job != "" and dept == ""'>
+			where job=#{job,jdbcType=VARCHAR}
+		</if>
+		<if test='dept != "" and job != ""'>
+			where dept=#{dept,jdbcType=VARCHAR} and
+			job=#{job,jdbcType=VARCHAR}
+		</if>
+		order by dept asc, job asc
+	</select>
+
+	<update id="pwdreset">
+		update tbl_member set
+		userpw = #{userpw}
+		Where userid=#{userid}
+	</update>
+
+
+	<update id="bonusplus">
+		update tbl_member set bonus=bonus<![CDATA[+]]>#{bonus} where userid=#{userid}
+	</update>
+	
+	<update id="bonusminus">
+		update tbl_member set bonus=bonus<![CDATA[-]]>#{bonus} where userid=#{userid}
+	</update>
+	
+	
+	<select id="bonuslist" resultMap="memberMap">
+		Select * from (
+		WITH tab AS (
+		SELECT
+		userid,username,bonus
+		FROM tbl_member where bonus <![CDATA[<>0]]>
+		)
+		Select
+		/*+INDEX_DESC(tbl_projectadmin pk_projectadmin) */
+		ROWNUM
+		rn,userid,username,bonus
+		from tab
+		<![CDATA[Where rownum <= 15]]>
+		order by bonus desc
+		)
+
+		<![CDATA[where rn >0]]>
+	</select>
+
+	<select id="bonuslistdept" resultMap="memberMap">
+		Select * from (
+		WITH tab AS (
+		SELECT
+		decode(dept,'10','인사부','20','총무부','30','회계부','40','기획부','50','영업부')as
+		dept,sum(bonus) bonus
+		FROM tbl_member where bonus <![CDATA[<>0]]>
+		group by dept
+		)
+		Select
+		/*+INDEX_DESC(tbl_projectadmin
+		pk_projectadmin) */
+		ROWNUM
+		rn,dept,bonus
+		from tab
+		<![CDATA[Where rownum <= 15]]>
+		order by bonus desc
+		)
+
+		<![CDATA[where rn >0]]>
+	</select>
+
+	<select id="bonuslistjob" resultMap="memberMap">
+		Select * from (
+		WITH tab AS (
+		SELECT
+		decode(job,'01','사원','02','주임','03','전임','04','선임','05','대리','06','과장','07','차장','08','부장','09','이사','10','상무','11','전무','12','부사장','13','사장','14','부회장','15','회장')as
+		job,sum(bonus) bonus
+		FROM tbl_member where bonus <![CDATA[<>0]]>
+		group by job
+		)
+		Select
+		/*+INDEX_DESC(tbl_projectadmin
+		pk_projectadmin) */
+		ROWNUM
+		rn,job,bonus
+		from
+		tab
+		<![CDATA[Where rownum <= 15]]>
+		order by
+		bonus desc
+		)
+
+		<![CDATA[where rn >0]]>
+	</select>
+
+	<select id="firstper" resultMap="memberMap">
+		select userid,
+		username
+		from (SELECT
+		userid,
+		username,
+		bonus,
+		dense_rank( )
+		OVER ( ORDER BY BONUS DESC ) AS RANK
+		FROM tbl_member where bonus <![CDATA[<>0]]>)
+		<![CDATA[where rank=1]]>
+	</select>
+
+	<select id="firstdept" resultMap="memberMap">
+		select
+		decode(dept,'10','인사부','20','총무부','30','회계부','40','기획부','50','영업부')as
+		dept
+		from (SELECT
+		dept,
+		sum(bonus) bonus,
+		dense_rank( ) OVER (ORDER BY
+		sum(bonus) DESC ) AS RANK
+		FROM tbl_member where bonus <![CDATA[<>0]]> GROUP by
+		dept)
+		<![CDATA[where RANK=1]]>
+	</select>
+
+
+	<select id="mbonuslist" resultMap="memberMap">
+		Select * from (
+		WITH tab AS (
+		SELECT distinct
+		m.username,b.userid,SUM(b.bonus) OVER(partition by b.userid)as bonus
+		FROM tbl_bonus b, tbl_member m where (b.userid=m.userid) and (b.day BETWEEN (TO_CHAR(TRUNC(SYSDATE,'MM'),'YYYYMMDD') ) AND (LAST_DAY(SYSDATE)))
+		)
+		Select
+		/*+INDEX_DESC(tbl_member pk_member) */
+		ROWNUM
+		rn,username,userid,bonus
+		from tab
+		<![CDATA[Where rownum <= 15]]>
+        		order by bonus desc
+		)
+
+		<![CDATA[where rn >0]]>
+	</select>
+	
+	<select id="mbonuslistdept" resultMap="memberMap">
+		Select * from (
+		WITH tab AS (
+		SELECT distinct
+		decode(m.dept,'10','인사부','20','총무부','30','회계부','40','기획부','50','영업부')as
+		dept,SUM(b.bonus) OVER(partition by m.dept)as bonus
+		FROM tbl_bonus b,tbl_member m where (b.userid=m.userid) and (b.day BETWEEN (TO_CHAR(TRUNC(SYSDATE,'MM'),'YYYYMMDD') ) AND (LAST_DAY(SYSDATE)))
+		)
+		Select
+		/*+INDEX_DESC(tbl_member pk_member) */
+		ROWNUM
+		rn,dept,bonus
+		from tab
+		<![CDATA[Where rownum <= 15]]>
+       			 order by bonus desc
+		)
+
+		<![CDATA[where rn >0]]>
+	</select>
+	
+	<select id="mbonuslistjob" resultMap="memberMap">
+		Select * from (
+		WITH tab AS (
+		SELECT distinct
+		decode(m.job,'01','사원','02','주임','03','전임','04','선임','05','대리','06','과장','07','차장','08','부장','09','이사','10','상무','11','전무','12','부사장','13','사장','14','부회장','15','회장')as
+		job,SUM(b.bonus) OVER(partition by m.job)as bonus
+		FROM tbl_bonus b,tbl_member m where (b.userid=m.userid) and (b.day BETWEEN (TO_CHAR(TRUNC(SYSDATE,'MM'),'YYYYMMDD') ) AND (LAST_DAY(SYSDATE)))
+		)
+		Select
+		/*+INDEX_DESC(tbl_member pk_member) */
+		ROWNUM
+		rn,job,bonus
+		from tab
+		<![CDATA[Where rownum <= 15]]>
+     			   order by bonus desc
+		)
+
+		<![CDATA[where rn >0]]>
+		
+	</select>
+	
+	<select id="mfirstper" resultMap="memberMap">
+		Select * from (
+		WITH tab AS (
+		SELECT distinct
+		m.userid,
+		m.username,
+		SUM(b.bonus) OVER(partition by b.userid)as bonus
+		FROM tbl_member m,tbl_bonus b where (b.userid=m.userid) and (b.day BETWEEN (TO_CHAR(TRUNC(SYSDATE,'MM'),'YYYYMMDD') ) AND (LAST_DAY(SYSDATE)))
+    		    )
+		Select
+		/*+INDEX_DESC(tbl_member pk_member) */
+		dense_rank( )
+		OVER ( ORDER BY BONUS DESC ) AS RANK
+		,userid,username,bonus
+		from tab
+		)
+       		 <![CDATA[where rank=1]]>
+	</select>
+	
+	<select id="mfirstdept" resultMap="memberMap">
+		Select * from (
+		WITH tab AS (
+		SELECT distinct
+		decode(m.dept,'10','인사부','20','총무부','30','회계부','40','기획부','50','영업부')as
+		dept,
+		SUM(b.bonus) OVER(partition by m.dept)as bonus
+		FROM tbl_member m,tbl_bonus b where (b.userid=m.userid) and (b.day BETWEEN (TO_CHAR(TRUNC(SYSDATE,'MM'),'YYYYMMDD') ) AND (LAST_DAY(SYSDATE)))
+     		  )
+		Select
+		/*+INDEX_DESC(tbl_member pk_member) */
+		dense_rank( )
+		OVER ( ORDER BY BONUS DESC ) AS RANK
+		,dept,bonus
+		from tab
+		)
+     		  <![CDATA[where rank=1]]>
+		
+	</select>
+	
+	
+	
+	<select id='memberselect2' resultMap='memberMap'>
+		SELECT * FROM(
+		SELECT username, dept, job, userid
+		FROM tbl_member
+		MINUS
+		SELECT DISTINCT s.username, m.dept, m.job, s.userid
+		FROM tbl_member m, tbl_memberselect s
+		WHERE ( m.userid = s.userid ) AND s.num = #{num}
+		)
+		<if test='dept != "" and job == ""'>
+			where dept=#{dept,jdbcType=VARCHAR}
+		</if>
+		<if test='job != "" and dept == ""'>
+			where job=#{job,jdbcType=VARCHAR}
+		</if>
+		<if test='dept != "" and job != ""'>
+			where dept=#{dept,jdbcType=VARCHAR} and
+			job=#{job,jdbcType=VARCHAR}
+		</if>
+		order by dept asc, job asc	
+	</select>
+</mapper>
+  

@@ -1,0 +1,24 @@
+1. web.xml 
+<load-on-startup>1</load-on-startup> 아래 부분 추가 
+<!--  web 소켓 -->
+		 <async-supported>true</async-supported>
+		 <!--  web 소켓 -->
+		 
+2. servlet-context.xml
+<!-- 상단에 xmlns:websocket="http://www.springframework.org/schema/websocket" 
+		속성도 추가 -->
+	<!-- 웹 소켓 핸들러 시작 -->
+	<websocket:handlers>
+		<websocket:mapping handler="chattingHandler"
+			path="/chatting" />
+		<websocket:sockjs></websocket:sockjs>
+	</websocket:handlers>
+	<beans:bean id="chattingHandler" class="kr.erp.socket.ChattingHandler"/>
+	<!-- 웹 소켓 핸들러 끝 -->
+3. kr.erp.socket.ChattingHandler 생성 
+
+
+4. ChatController 생성 
+
+
+ 

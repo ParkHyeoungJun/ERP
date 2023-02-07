@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.erp.mapper.ReportMapper">
+	<resultMap type="kr.erp.vo.ReportVO" id="reportMap">
+		<id property="idx" column="idx" />
+		<result property="num" column="num" />
+		<result property="filename" column="filename" />
+		<result property="uuid" column="uuid" />
+		<result property="writer" column="writer" />
+		<result property="day" column="day" />
+		<result property="updater" column="updater" />
+		<result property="updatedate" column="updatedate" />
+		<result property="ip" column="ip" />
+		<result property="cnt" column="cnt" />
+		<result property="projectday" column="projectday" />
+		<collection property="arrList" resultMap="reportsubMap"></collection>
+	</resultMap>
+	<resultMap type="kr.erp.vo.ReportsubVO" id="reportsubMap">
+		<result property="sel" column="sel" />
+		<result property="txt" column="txt" />
+		<result property="daytostring" column="daytostring" />
+	</resultMap>
+	<insert id="add">
+		<selectKey keyProperty="idx" order="BEFORE"
+			resultType="long">
+			SELECT
+			Report_seq.nextval FROM DUAL
+		</selectKey>
+		insert into tbl_Report
+		(
+		idx,
+		num,
+		filename,
+		uuid,
+		writer,
+		day,
+		ip
+		)
+		Values
+		(
+		#{idx},
+		#{num},
+		#{filename},
+		#{uuid},
+		#{writer},
+		sysdate,
+		#{ip}
+		)
+	</insert>
+
+
+	<delete id="delete">
+		delete tbl_Report Where idx = #{idx}
+	</delete>
+
+	<select id="select" resultMap="reportMap">
+		Select * from tbl_Report Where idx
+		= #{idx}
+	</select>
+
+	<select id="get" resultMap="reportMap">
+		SELECT
+		a.*
+		,b.sel
+		,b.txt
+		,to_char(a.day,'yyyy-mm-dd') as projectday
+		,to_char(b.day,'yyyy-mm-dd') as daytostring
+		FROM
+		tbl_report a join TBL_REPORTSUB b
+		on a.idx= b.idx Where a.num=#{num}
+	</select>
+	
+	<select id="detils" resultMap="reportMap">
+	SELECT
+    a.* FROM  TBL_REPORT A 
+     Where a.num=#{num} and a.writer = #{writer}
+	</select>
+</mapper>
+  

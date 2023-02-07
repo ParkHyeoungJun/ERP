@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.erp.mapper.DocMapper">
+	<resultMap type="kr.erp.vo.DocVO" id="docMap">
+		<id property="idx" column="idx" />
+		<result property="num" column="num" />
+		<result property="filetype" column="filetype" />
+		<result property="filename" column="filename" />
+		<result property="uuid" column="uuid" />
+		<result property="prentidx" column="prentidx" />
+		<result property="prentidx" column="prentidx" />
+		<result property="ip" column="ip" />
+		<result property="day" column="day" />
+		<result property="writer" column="writer" />
+		<result property="updater" column="updater" />
+		<result property="updatedate" column="updatedate" />
+		<result property="cnt" column="cnt" />
+	</resultMap>
+	
+	<insert id="add">
+	insert into tbl_doc 
+	(
+		idx 			,
+		num 	        ,
+		filetype 		, 
+		filename 		, 
+		uuid 			,   
+		prentidx        , 
+		ip 				,
+		day 			,
+		writer 
+	)
+	Values
+	(
+		doc_seq.nextval     ,
+		#{num} 	            ,
+		#{filetype} 		, 
+		#{filename} 		, 
+		#{uuid} 			,   
+		#{prentidx}         , 
+		#{ip} 			,
+		sysdate 			,
+		#{writer} 
+	)
+	</insert>
+	
+	<update id="modfiy">
+		update tbl_doc set 
+		filetype = #{filetype}	,
+		filename = #{filename}	,
+		uuid = #{uuid}		,
+		updater = #{updater}	,
+		updatedate = sysdate 
+		Where idx = #{idx}
+	</update>
+	
+	<select id="select">
+		Select * from tbl_doc Where num =#{num} idx desc 
+	</select>
+</mapper>
+
+
+
+
+
+
+
+
+
+
+

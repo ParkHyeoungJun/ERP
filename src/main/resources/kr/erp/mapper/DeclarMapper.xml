@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.erp.mapper.DeclarMapper">
+
+   <insert id="add">
+      insert into tbl_declar(idx, num, sel, val, writer,
+      day, title, content, ip)
+      Values(Declar_seq.nextval, #{num}, #{sel},
+      #{val}, #{writer}, sysdate,
+      #{title}, #{content}, #{ip})
+   </insert>
+
+
+   <sql id="criteria">
+      <trim prefix="(" suffix=")" prefixOverrides="OR">
+         <foreach item="type" collection="typeArr">
+            <trim prefix="OR">
+               <choose>
+                  <when test="type=='T'.toString()">
+                     idx like '%'||#{keyword}||'%'
+                  </when>
+                  <when test="type=='C'.toString()">
+                     num like '%'||#{keyword}||'%'
+                  </when>
+                  <when test="type=='W'.toString()">
+                     writer like '%'||#{keyword}||'%'
+                  </when>
+               </choose>
+            </trim>
+         </foreach>
+      </trim>
+   </sql>
+
+   <select id="select" resultMap="declarMap">
+      select rn, idx, num, sel, val, writer, day, cnt
+      from
+      (
+      select
+      /*+INDEX_DESC(tbl_declar pk_declar) */
+      rownum rn, idx, num, DECODE(sel,
+      '1', '욕설', '2', '비방', '3', '광고', '4', '허위', '5', '음란물', '6', '기타사항',
+      '')
+      as
+      sel, val, writer, day,
+      (Select count(1) from tbl_declar Where 1=1
+      and
+      <include refid="criteria" />
+      ) as cnt
+      from tbl_declar
+      Where
+      <![CDATA[
+      rownum <= #{pageNum} * #{amount}
+      and
+      ]]>
+      <include refid="criteria" />
+      )
+      where rn > (#{pageNum}-1) * #{amount}
+      and
+      <include refid="criteria" />
+   </select>
+
+   <sql id="criteria1">
+      <trim prefix="(" suffix=")" prefixOverrides="OR">
+         <foreach item="type" collection="typeArr">
+            <trim prefix="OR">
+               <choose>
+                  <when test="type=='T'.toString()">
+                     idx like '%'||#{keyword}||'%'
+                  </when>
+                  <when test="type=='C'.toString()">
+                     num like '%'||#{keyword}||'%'
+                  </when>
+                  <when test="type=='W'.toString()">
+                     title like '%'||#{keyword}||'%'
+                  </when>
+               </choose>
+            </trim>
+         </foreach>
+      </trim>
+   </sql>
+
+    <select id="Cselect" resultMap="declarMap">
+      select rn, idx, num, sel, val, writer, day, title, cnt
+      from
+      (
+      select
+      /*+INDEX_DESC(tbl_declar pk_declar) */
+      rownum rn, idx, num, DECODE(sel,
+      '1', '욕설', '2', '비방', '3', '광고', '4', '허위', '5', '음란물', '6', '기타사항',
+      '')
+      as
+      sel, val, writer, day, title,
+      (Select count(1) from tbl_declar
+      Where writer=#{writer, jdbcType=VARCHAR} and 
+      <include refid="criteria1" />
+      ) as cnt
+      from tbl_declar
+      Where
+      <![CDATA[
+      rownum <= #{pageNum} * #{amount}
+      and
+      ]]>
+      <include refid="criteria1" />
+      )
+      where rn > (#{pageNum}-1) * #{amount}
+      and
+      <include refid="criteria1" /> and writer=#{writer, jdbcType=VARCHAR}
+   </select>
+
+   <resultMap type="kr.erp.vo.DeclarVO" id="declarMap">
+      <result property="idx" column="idx" />
+      <result property="num" column="num" />
+      <result property="sel" column="sel" />
+      <result property="val" column="val" />
+      <result property="writer" column="writer" />
+      <result property="day" column="day" />
+      <result property="title" column="title" />
+      <result property="content" column="content" />
+      <result property="cnt" column="cnt" />
+   </resultMap>
+
+   <select id="read" resultType="kr.erp.vo.DeclarVO">
+      select idx, num, DECODE(sel,
+      '1', '욕설', '2', '비방', '3', '광고', '4', '허위', '5', '음란물', '6', '기타사항',
+      '')
+      as
+      sel, val, writer,
+      day, title, content from tbl_declar where
+      idx=#{idx}
+   </select>
+
+
+   <delete id="delete">
+      delete tbl_declar Where idx = #{idx}
+   </delete>
+</mapper>
